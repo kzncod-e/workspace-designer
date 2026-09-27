@@ -164,33 +164,38 @@ export function CheckoutSummary({
               )}
 
               {/* Accessories */}
-              {accessories.map((item) => (
-                <div
-                  key={item.id}
-                  className="p-3 rounded-xl border border-border/70 bg-card flex items-center justify-between gap-3 text-xs"
-                >
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => removeAccessory(item.id)}
-                      className="text-muted-foreground hover:text-destructive p-1 rounded-md transition-colors"
-                      title="Remove item"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                    <div>
-                      <span className="font-medium text-foreground">{item.name}</span>
-                      <p className="text-[10px] text-muted-foreground">{item.subtitle}</p>
+              {Array.from(new Set(accessories.map(a => a.id))).map((id) => {
+                const item = accessories.find(a => a.id === id)!;
+                const count = accessories.filter(a => a.id === id).length;
+                
+                return (
+                  <div
+                    key={id}
+                    className="p-3 rounded-xl border border-border/70 bg-card flex items-center justify-between gap-3 text-xs"
+                  >
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => removeAccessory(id)}
+                        className="text-muted-foreground hover:text-destructive p-1 rounded-md transition-colors"
+                        title="Remove item"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                      <div>
+                        <span className="font-medium text-foreground">{count > 1 ? `${count}x ` : ""}{item.name}</span>
+                        <p className="text-[10px] text-muted-foreground">{item.subtitle}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <span className="font-bold text-foreground">
+                        +{formatPrice(item.pricePerMonth * count)}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground block">/ month</span>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <span className="font-bold text-foreground">
-                      +{formatPrice(item.pricePerMonth)}
-                    </span>
-                    <span className="text-[10px] text-muted-foreground block">/ month</span>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             <Separator className="my-4 bg-border/60" />

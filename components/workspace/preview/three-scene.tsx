@@ -198,6 +198,64 @@ export function ThreeScene() {
               </group>
             );
           })}
+
+          {/* Other Accessories */}
+          {accessories
+            .filter(a => !["monitor", "plant"].includes(a.category))
+            .map((item, i) => {
+              // Simple generic shapes based on category
+              let geom = <Box args={[0.2, 0.1, 0.2]} />;
+              let pos: [number, number, number] = [0, 0.8, 0];
+              
+              switch(item.category) {
+                case "keyboard":
+                  geom = <Box args={[0.4, 0.02, 0.15]} />;
+                  pos = [0, 0.78, 0.2];
+                  break;
+                case "desk-pad":
+                  geom = <Box args={[0.8, 0.01, 0.4]} />;
+                  pos = [0, 0.76, 0.2];
+                  break;
+                case "laptop-stand":
+                  geom = <Box args={[0.3, 0.15, 0.2]} />;
+                  pos = [-0.5, 0.82, 0];
+                  break;
+                case "lamp":
+                  geom = <Cylinder args={[0.02, 0.05, 0.5]} />;
+                  pos = [0.6, 1.0, -0.2];
+                  break;
+                case "speaker":
+                  geom = <Box args={[0.15, 0.25, 0.15]} />;
+                  // If it's a speaker, let's say one on the left, one on the right (if multiple, we could spread them)
+                  pos = [0.8, 0.9, 0.1];
+                  break;
+                default:
+                  // For lifestyle items like coffee, place them off to the side
+                  geom = <Cylinder args={[0.04, 0.03, 0.1]} />;
+                  pos = [0.4, 0.8, 0.3];
+                  break;
+              }
+
+              // Just a bit of offset to avoid complete overlap if there are multiple "other" items
+              pos[0] += (i % 3 - 1) * 0.1;
+
+              return (
+                <group 
+                  key={`${item.id}-${i}`}
+                  position={pos}
+                  onPointerDown={(e) => handlePointerDown(e, item.category, item.id)}
+                >
+                  {React.cloneElement(geom, { castShadow: true, receiveShadow: true }, (
+                    <meshStandardMaterial color={item.colorHex || "#555"} />
+                  ))}
+                  {selectedPreviewItem === item.id && (
+                    <Box args={[0.5, 0.5, 0.5]} position={[0, 0, 0]}>
+                      <meshBasicMaterial color="#10b981" wireframe />
+                    </Box>
+                  )}
+                </group>
+              );
+            })}
         </Suspense>
 
         {/* Controls */}

@@ -168,17 +168,22 @@ export function WorkspaceSummary({ onOpenCheckout }: WorkspaceSummaryProps) {
           </div>
 
           {/* Accessories Lines */}
-          {accessories.map((acc) => (
-            <div key={acc.id} className="flex items-center justify-between text-muted-foreground">
-              <div className="flex items-center gap-1.5 truncate max-w-[210px]">
-                <span className="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0" />
-                <span className="truncate">{acc.name}</span>
+          {Array.from(new Set(accessories.map(a => a.id))).map((id) => {
+            const acc = accessories.find(a => a.id === id)!;
+            const count = accessories.filter(a => a.id === id).length;
+            
+            return (
+              <div key={id} className="flex items-center justify-between text-muted-foreground">
+                <div className="flex items-center gap-1.5 truncate max-w-[210px]">
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0" />
+                  <span className="truncate">{count > 1 ? `${count}x ` : ""}{acc.name}</span>
+                </div>
+                <span className="font-medium text-foreground shrink-0">
+                  +{formatPrice(acc.pricePerMonth * count)}
+                </span>
               </div>
-              <span className="font-medium text-foreground shrink-0">
-                +{formatPrice(acc.pricePerMonth)}
-              </span>
-            </div>
-          ))}
+            );
+          })}
 
           {accessories.length === 0 && (
             <p className="text-[11px] text-muted-foreground italic py-1">
