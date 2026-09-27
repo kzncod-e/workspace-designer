@@ -15,13 +15,14 @@ This application provides a **tactile, visual workspace configurator** where use
 
 ## ✨ Key Features
 
-1. **Layered Architectural Workspace Preview (The Centerpiece)**
-   - **Dynamic SVG/CSS Illustration**: Rendered with mathematical perspective and depth sorting across 5 dedicated layers (Room Background, Desk, Accessories, Monitors, Ergonomic Chair).
+1. **Interactive 3D WebGL Workspace Preview (The Centerpiece)**
+   - **React Three Fiber & Three.js Engine**: Fully interactive 3D scene built with `@react-three/fiber`. Users can freely orbit, tilt, and zoom around their workspace.
+   - **Drag-and-Drop Positioning**: Powered by `@react-three/drei`'s `PivotControls`, users can reposition monitors and accessories in 3D space.
    - **Bali Lighting & Atmosphere Switcher**:
-     - ☀️ **Daylight**: Morning Balinese sunlight with outside tropical palm fronds.
-     - 🌅 **Sunset**: Golden hour amber warmth with rich dusk sky hues.
+     - ☀️ **Daylight**: Morning Balinese sunlight with `apartment` environment mapping.
+     - 🌅 **Sunset**: Golden hour amber warmth with rich dusk sky hues and softer directional lighting.
      - 🌙 **Midnight**: Deep slate focus mode with realistic monitor screen glow, backlights, and radiant desk lamp illumination cones.
-   - **Interactive Spatial Hotspots**: Toggleable floating badges pinned in 3D space indicating item name, price, and category focus on click.
+   - **Fullscreen Mode**: Native Fullscreen API integration for an immersive, edge-to-edge 3D configuration experience.
 
 2. **Curated Preset Configurations (1-Click Setup)**
    - **The Nomad Essential**: Solid Oak Desk + Ergonomic Mesh Chair + 27" 4K Display + ScreenBar + Bali Monstera (€120/mo).
@@ -50,11 +51,11 @@ This application provides a **tactile, visual workspace configurator** where use
    - Digital Nomad Delivery Form: Full Name, WhatsApp Number (the primary communication channel in Bali), Email, Bali Area selector (Canggu, Seminyak, Pererenan, Ubud, Sanur, Uluwatu), Villa Address, and preferred delivery date.
    - **Celebration Confirmation Dialog**: Triggers confetti animation, generates a unique order reference (e.g. `MN-BALI-8942`), confirms delivery timeframe, and offers a **1-click text receipt download** for travel expense reimbursement.
 
-6. **Robust State Persistence & Edge State Handling**
-   - Zustand store with `localStorage` synchronization.
-   - Safe parsing and schema fallback ensuring zero crashes even with corrupted client storage.
+6. **Robust State Persistence & URL Synchronization**
+   - **Zustand Store**: Lightweight client-side state management with safe `localStorage` synchronization.
+   - **URL Syncing**: The complete workspace setup is automatically encoded into compressed URL parameters (e.g. `?d=desk-minimal-oak&c=chair-ergo-mesh&a=acc-monitor-27`). Teams can copy their URL to share their exact setup with their finance department.
+   - **Multi-Instance Support**: Users can add multiple identical accessories (e.g. up to 3 monitors or plants), dynamically represented in the 3D space and summary.
    - Reset Confirmation Alert Dialog to prevent accidental setup loss.
-   - Graceful empty states with dashed blueprint ghost outlines if desk or chair is deselected.
 
 ---
 
@@ -66,6 +67,7 @@ This application provides a **tactile, visual workspace configurator** where use
 | **TypeScript** | Language | End-to-end type safety across product data, workspace state, rental pricing, and UI props. Eliminates runtime errors and provides self-documenting code. |
 | **Tailwind CSS v4** | Styling | Rapid utility-first styling with modern OKLCH color spaces, custom design tokens, fluid container queries, and minimal bundle footprint. |
 | **shadcn/ui** | Component System | Accessible, unstyled, composable primitives (Cards, Badges, Buttons, Tabs, Sheets, Dialogs, Tooltips, Checkboxes, AlertDialogs, Separators). Customized heavily to create a bespoke European architectural aesthetic rather than a stock demo look. |
+| **Three.js & R3F** | 3D Rendering | `@react-three/fiber` and `@react-three/drei` provide a highly interactive WebGL 3D canvas with OrbitControls, PivotControls, and Environment mapping for immersive workspace previews. |
 | **Zustand** | State Management | Lightweight (<1kB), hook-based state management without provider boilerplate. Seamless persistence middleware and clean action dispatching. |
 | **Motion (`motion/react`)** | Animations | Smooth hardware-accelerated spring animations for card selection, hover states, layout changes, and interactive tag presence. |
 | **Lucide React** | Iconography | Consistent, modern, light-weight stroke icons matching the refined European startup design language. |
@@ -94,14 +96,11 @@ workspace-designer/
 │   ├── ui/                        # shadcn/ui components (card, button, sheet, dialog, tabs, etc.)
 │   └── workspace/
 │       ├── preview/
-│       │   ├── accessories-layer.tsx # SVG layer for desk pad, laptop stand, keyboard, plants, lamps
-│       │   ├── chair-layer.tsx       # SVG layer for ergonomic mesh, leather recliner, lounge, stool
-│       │   ├── desk-layer.tsx        # SVG layer for oak, walnut standing desk, bamboo, birch
-│       │   ├── monitor-layer.tsx     # SVG layer for single 27", 34" curved ultrawide, dual 4K
-│       │   └── room-background.tsx   # SVG background: Bali studio window, tropical palms, flooring
+│       │   └── three-scene.tsx       # WebGL Canvas, OrbitControls, 3D placeholder meshes, PivotControls
 │       ├── workspace-builder.tsx  # Master layout coordinator, responsive grid, header, mobile bar
-│       ├── workspace-preview.tsx  # Interactive visual centerpiece with lighting toggles & hot-tags
-│       └── workspace-summary.tsx  # Real-time pricing calculator, lease duration picker, reset dialog
+│       ├── workspace-preview.tsx  # Interactive visual centerpiece wrapping ThreeScene with lighting toggles & fullscreen API
+│       ├── workspace-summary.tsx  # Real-time pricing calculator, lease duration picker, reset dialog
+│       └── lifestyle-extras.tsx   # Curated add-ons tailored for digital nomads
 ├── data/
 │   └── products.ts                # Strongly-typed catalog data for all desks, chairs, accessories & presets
 ├── lib/
@@ -134,26 +133,24 @@ workspace-designer/
 
 ## ⚖️ Trade-offs & Deliberate Simplifications
 
-1. **Vector SVG & CSS Preview vs. Heavy WebGL/Three.js 3D Engine**:
-   - *Decision*: Built a crisp, responsive SVG layer illustration system rather than a Three.js / Canvas 3D canvas.
-   - *Rationale*: A Three.js 3D model viewer would introduce megabytes of asset downloads, slower load times on mobile devices on tropical villa Wi-Fi, and complex shader maintenance. The SVG approach delivers instant rendering, zero network lag, crisp scaling on Retina displays, and zero dependencies.
+1. **Live 3D Rendering vs Static Images**:
+   - *Decision*: Transitioned from SVG layouts to a full WebGL 3D environment using React Three Fiber.
+   - *Rationale*: A 3D model viewer provides a vastly superior user experience, allowing them to orbit, tilt, and view their exact configuration from any angle. It feels significantly more premium.
 2. **Mock Payment vs. Real Stripe Processing**:
    - *Decision*: Implemented the complete end-to-end checkout experience with order confirmation, verification, and receipt generation without live Stripe payment gateway credentials.
    - *Rationale*: monis.rent operates on local delivery verification where nomads inspect the equipment upon villa setup before recurring invoicing begins.
 3. **Fixed Slot Categories (e.g. 1 Desk, 1 Chair) vs. Multi-Room Setup**:
-   - *Decision*: Configured for an individual workstation setup rather than multi-desk office floor planning.
+   - *Decision*: Configured for an individual workstation setup with quantity multipliers for accessories (up to 3 monitors/plants), rather than full multi-desk office floor planning.
    - *Rationale*: Best matches the core use case of individual nomads and remote teams renting personalized workstations.
 
 ---
 
 ## 🚀 Improvements With More Time
 
-1. **3D Orbit & Tilt Workspace Mode**: Integrate Three.js / React Three Fiber with custom glTF 3D furniture models to allow 360° rotation and camera zooming.
+1. **Custom glTF Models**: Replace the primitive 3D placeholder geometries (Boxes/Cylinders) with actual `.gltf`/`.glb` photorealistic product models.
 2. **Live Villa Inventory & Calendar Availability**: Real-time inventory sync tracking stock in Canggu vs. Ubud warehouses and calendar date picker disabling booked-out dates.
-3. **Interactive Drag-and-Drop Positioning**: Allow users to drag accessories (lamp, plant, monitor) anywhere across the desk surface with persistent X/Y coordinates.
-4. **Multi-User Workspace Sharing & URL Encoding**: Encode the complete workspace setup into compressed URL parameters (e.g. `monis.rent/share?d=desk-oak&c=chair-ergo&a=acc-monitor-34`) so teams can share setups with their finance department.
-5. **Stripe / Midtrans Indonesia Payment Integration**: Direct credit card and Indonesian QRIS payment processing for automated monthly recurring subscription billing.
-6. **Custom Villa Dimensions Checker**: Augmented Reality (WebXR) preview allowing nomads to view the desk in their actual villa room using their smartphone camera.
+3. **Stripe / Midtrans Indonesia Payment Integration**: Direct credit card and Indonesian QRIS payment processing for automated monthly recurring subscription billing.
+4. **Custom Villa Dimensions Checker**: Augmented Reality (WebXR) preview allowing nomads to view the desk in their actual villa room using their smartphone camera.
 
 ---
 
@@ -162,7 +159,8 @@ workspace-designer/
 - [x] **Desk Selection**: 4 distinctive desks with realistic pricing, materials, specifications, and images.
 - [x] **Chair Selection**: 4 distinctive ergonomic chairs with breathable mesh, cognac leather, and active motion options.
 - [x] **Accessories**: 9 categorized accessories across monitors, lighting, audio, decor, and ergonomic gear.
-- [x] **Visual Workspace Preview**: Layered, responsive visual illustration with dynamic lighting modes and spatial hotspot tags that updates immediately upon selection.
+- [x] **Visual Workspace Preview**: Layered WebGL 3D preview powered by React Three Fiber with dynamic lighting modes, fullscreen API, and multiple accessory rendering.
+- [x] **State Persistence**: Setup seamlessly syncs with both `localStorage` and URL query parameters for easy sharing.
 - [x] **Summary & Checkout**: Full itemized review view, flexible lease duration discounts, Bali villa delivery form, and confirmation dialog with celebration confetti.
 - [x] **Responsive**: Polished desktop layout with sticky preview and dedicated mobile floating action bar.
 - [x] **Clean Architecture & Types**: Strict TypeScript, Zustand state management with safe localStorage persistence, and separated component hierarchy.
