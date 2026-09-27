@@ -3,16 +3,12 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { useWorkspaceStore } from "@/lib/store";
-import { RoomBackground } from "./preview/room-background";
-import { DeskLayer } from "./preview/desk-layer";
-import { ChairLayer } from "./preview/chair-layer";
-import { MonitorLayer } from "./preview/monitor-layer";
-import { AccessoriesLayer } from "./preview/accessories-layer";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Sun, Sunset, Moon, Tag, Sparkles } from "lucide-react";
+import { Sun, Sunset, Moon, Tag, Sparkles, Maximize, Minimize } from "lucide-react";
 import { LightingMode } from "@/types/workspace";
 import { calculateBaseMonthlyTotal, formatPrice } from "@/lib/workspace";
+import { ThreeScene } from "./preview/three-scene";
 
 export function WorkspacePreview() {
   const {
@@ -27,6 +23,26 @@ export function WorkspacePreview() {
   } = useWorkspaceStore();
 
   const [showTags, setShowTags] = useState(true);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const containerRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
+  }, []);
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      containerRef.current?.requestFullscreen().catch((err) => {
+        console.error(`Error attempting to enable full-screen mode: ${err.message}`);
+      });
+    } else {
+      document.exitFullscreen();
+    }
+  };
 
   const basePrice = calculateBaseMonthlyTotal(desk, chair, accessories);
   const monitor = accessories.find((a) => a.category === "monitor") || null;
@@ -47,7 +63,12 @@ export function WorkspacePreview() {
   };
 
   return (
-    <div className="relative w-full rounded-2xl overflow-hidden border border-border/80 bg-card shadow-xl transition-all duration-300">
+    <div 
+      ref={containerRef}
+      className={`relative w-full overflow-hidden border border-border/80 bg-card transition-all duration-300 ${
+        isFullscreen ? "h-screen rounded-none" : "rounded-2xl shadow-xl min-h-[500px] h-[60vh]"
+      }`}
+    >
       {/* Top Preview Control Bar */}
       <div className="absolute top-3 left-3 right-3 z-30 flex items-center justify-between gap-2 pointer-events-none">
         {/* Left: Product & Setup Status Badge */}
@@ -127,66 +148,34 @@ export function WorkspacePreview() {
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
+
+          <div className="w-px h-3.5 bg-border/80 mx-0.5" />
+
+          {/* Fullscreen Toggle */}
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <button
+                    onClick={toggleFullscreen}
+                    className="p-1.5 rounded-full text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                    aria-label="Toggle Fullscreen"
+                  />
+                }
+              >
+                {isFullscreen ? <Minimize className="w-3.5 h-3.5" /> : <Maximize className="w-3.5 h-3.5" />}
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="text-xs">
+                {isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
       </div>
 
-      {/* Main Interactive SVG Workspace Scene */}
-      <div className="relative w-full aspect-[16/10] sm:aspect-[16/9.5] select-none">
-        <svg
-          viewBox="0 0 1000 600"
-          className="w-full h-full object-cover"
-          preserveAspectRatio="xMidYMid meet"
-        >
-          {/* Layer 1: Room Background (Sky, Window, Palm Fronds, Wall, Floor, Rug) */}
-          <RoomBackground lightingMode={lightingMode} />
-
-          {/* Layer 2: Desk Layer */}
-          <DeskLayer
-            desk={desk}
-            lightingMode={lightingMode}
-            isSelected={selectedPreviewItem === desk?.id}
-            onSelect={() => {
-              if (desk) handleItemClick("desk", desk.id);
-              else setActiveCategory("desk");
-            }}
-          />
-
-          {/* Layer 3: Accessories Layer (Desk Pad, Keyboard, Plants, Speakers, Laptop Stand, Lamp) */}
-          <AccessoriesLayer
-            accessories={accessories}
-            lightingMode={lightingMode}
-            selectedPreviewItem={selectedPreviewItem}
-            onSelectAccessory={(id) => {
-              setSelectedPreviewItem(id);
-              const found = accessories.find((a) => a.id === id);
-              if (found) setActiveCategory(found.category);
-            }}
-            hasMonitor={Boolean(monitor)}
-          />
-
-          {/* Layer 4: Monitor Layer */}
-          <MonitorLayer
-            monitor={monitor}
-            lightingMode={lightingMode}
-            isSelected={selectedPreviewItem === monitor?.id}
-            onSelect={() => {
-              if (monitor) handleItemClick("monitor", monitor.id);
-              else setActiveCategory("monitor");
-            }}
-            hasScreenBar={hasScreenBar}
-          />
-
-          {/* Layer 5: Chair Layer (Positioned with 3D Depth) */}
-          <ChairLayer
-            chair={chair}
-            lightingMode={lightingMode}
-            isSelected={selectedPreviewItem === chair?.id}
-            onSelect={() => {
-              if (chair) handleItemClick("chair", chair.id);
-              else setActiveCategory("chair");
-            }}
-          />
-        </svg>
+      {/* Main Interactive 3D Workspace Scene */}
+      <div className="relative w-full h-full select-none bg-zinc-100 dark:bg-zinc-900 pb-[52px]">
+        <ThreeScene />
 
         {/* Floating Interactive Spatial Hotspots (when showTags is enabled) */}
         <AnimatePresence>
@@ -254,12 +243,12 @@ export function WorkspacePreview() {
       </div>
 
       {/* Bottom Live Price & Item Quick Summary Bar */}
-      <div className="px-4 py-3 bg-card/95 border-t border-border/60 flex items-center justify-between text-xs">
+      <div className="absolute bottom-0 left-0 right-0 px-4 py-3 bg-card/95 backdrop-blur-md border-t border-border/60 flex items-center justify-between text-xs z-30">
         <div className="flex items-center gap-2">
-          <span className="text-muted-foreground">Active Configuration:</span>
+          <span className="text-muted-foreground hidden sm:inline">Active Configuration:</span>
           <span className="font-semibold text-foreground">
-            {desk ? "1 Desk" : "No Desk"} • {chair ? "1 Chair" : "No Chair"} •{" "}
-            {accessories.length} {accessories.length === 1 ? "Accessory" : "Accessories"}
+            {desk ? "1 Desk" : "No Desk"} • {chair ? "1 Chair" : "No Chair"}
+            <span className="hidden sm:inline"> • {accessories.length} {accessories.length === 1 ? "Accessory" : "Accessories"}</span>
           </span>
         </div>
 

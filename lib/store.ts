@@ -24,6 +24,7 @@ interface WorkspaceStore {
   addAccessory: (product: Product) => void;
   removeAccessory: (productId: string) => void;
   hasAccessory: (productId: string) => boolean;
+  getAccessoryCount: (productId: string) => number;
   applyPreset: (presetId: string) => void;
   clearWorkspace: () => void;
   setLightingMode: (mode: LightingMode) => void;
@@ -62,28 +63,54 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
 
       toggleAccessory: (product) => {
         const { accessories } = get();
-        const exists = accessories.some((item) => item.id === product.id);
-        if (exists) {
-          set({
-            accessories: accessories.filter((item) => item.id !== product.id),
-            selectedPreviewItem: null,
-          });
-        } else {
-          // If accessory is a monitor and another monitor is selected, or if allowed multiple
-          // For monitors, let's replace or add depending on choice
-          if (product.category === "monitor") {
-            const nonMonitors = accessories.filter((item) => item.category !== "monitor");
+        const count = accessories.filter((item) => item.id === product.id).length;
+        
+        // Allowed limits
+        const limit = (product.category === "monitor" || product.category === "plant") ? 3 : 1;
+
+        if (count > 0) {
+          // If it's single item or we click toggle on something that exists, we probably want to remove ONE instance.
+          // Or we can just let AccessoryCard use addAccessory / removeAccessory directly for items that support multiple.
+          // For backward compatibility of toggleAccessory: if it's a single item, toggle it.
+          if (limit === 1) {
             set({
-              accessories: [...nonMonitors, product],
-              selectedPreviewItem: product.id,
+              accessories: accessories.filter((item) => item.id !== product.id),
+              selectedPreviewItem: null,
             });
+          } else {
+             // For multiple items, toggleAccessory doesn't make as much sense, 
+             // but we'll remove one instance if called.
+             const index = accessories.findLastIndex(a => a.id === product.id);
+             if (index !== -1) {
+               const newAcc = [...accessories];
+               newAcc.splice(index, 1);
+               set({ accessories: newAcc, selectedPreviewItem: null });
+             }
+          }
+        } else {
+          // Add it
+          if (product.category === "monitor") {
+            // Keep existing logic to allow multiple monitors without wiping others?
+            // User wants up to 3 monitors. Let's just add it.
+            const monitorCount = accessories.filter((item) => item.category === "monitor").length;
+            if (monitorCount < 3) {
+              set({
+                accessories: [...accessories, product],
+                selectedPreviewItem: product.id,
+              });
+            }
           } else if (product.category === "lamp") {
+            // Lamps still max 1
             const nonLamps = accessories.filter((item) => item.category !== "lamp");
             set({
               accessories: [...nonLamps, product],
               selectedPreviewItem: product.id,
             });
           } else {
+            // Plants or others
+            const catCount = accessories.filter((item) => item.category === product.category).length;
+            if (product.category === "plant" && catCount >= 3) return; // limit to 3
+            
             set({
               accessories: [...accessories, product],
               selectedPreviewItem: product.id,
@@ -94,21 +121,33 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
 
       addAccessory: (product) => {
         const { accessories } = get();
-        if (!accessories.some((item) => item.id === product.id)) {
+        const catCount = accessories.filter((item) => item.category === product.category).length;
+        const limit = (product.category === "monitor" || product.category === "plant") ? 3 : 1;
+        
+        if (catCount < limit) {
           set({ accessories: [...accessories, product], selectedPreviewItem: product.id });
         }
       },
 
       removeAccessory: (productId) => {
         const { accessories } = get();
-        set({
-          accessories: accessories.filter((item) => item.id !== productId),
-          selectedPreviewItem: null,
-        });
+        const index = accessories.findLastIndex((item) => item.id === productId);
+        if (index !== -1) {
+          const newAcc = [...accessories];
+          newAcc.splice(index, 1);
+          set({
+            accessories: newAcc,
+            selectedPreviewItem: null,
+          });
+        }
       },
 
       hasAccessory: (productId) => {
         return get().accessories.some((item) => item.id === productId);
+      },
+
+      getAccessoryCount: (productId: string) => {
+        return get().accessories.filter((item) => item.id === productId).length;
       },
 
       applyPreset: (presetId) => {

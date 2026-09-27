@@ -7,7 +7,12 @@ export type ProductCategory =
   | "keyboard"
   | "speaker"
   | "laptop-stand"
-  | "desk-pad";
+  | "desk-pad"
+  | "coffee-machine"
+  | "surfboard"
+  | "motorcycle"
+  | "bean-bag"
+  | "tool-shelf";
 
 export interface Product {
   id: string;

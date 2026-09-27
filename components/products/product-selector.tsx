@@ -24,7 +24,10 @@ export function ProductSelector() {
     selectDesk,
     selectChair,
     toggleAccessory,
+    addAccessory,
+    removeAccessory,
     hasAccessory,
+    getAccessoryCount,
     applyPreset,
   } = useWorkspaceStore();
 
@@ -212,8 +215,10 @@ export function ProductSelector() {
               <AccessoryCard
                 key={m.id}
                 accessory={m}
-                isSelected={hasAccessory(m.id)}
+                quantity={getAccessoryCount(m.id)}
                 onToggle={() => toggleAccessory(m)}
+                onAdd={() => addAccessory(m)}
+                onRemove={() => removeAccessory(m.id)}
               />
             ))}
           </div>
@@ -234,8 +239,10 @@ export function ProductSelector() {
               <AccessoryCard
                 key={la.id}
                 accessory={la}
-                isSelected={hasAccessory(la.id)}
+                quantity={getAccessoryCount(la.id)}
                 onToggle={() => toggleAccessory(la)}
+                onAdd={() => addAccessory(la)}
+                onRemove={() => removeAccessory(la.id)}
               />
             ))}
           </div>
@@ -256,8 +263,10 @@ export function ProductSelector() {
               <AccessoryCard
                 key={item.id}
                 accessory={item}
-                isSelected={hasAccessory(item.id)}
+                quantity={getAccessoryCount(item.id)}
                 onToggle={() => toggleAccessory(item)}
+                onAdd={() => addAccessory(item)}
+                onRemove={() => removeAccessory(item.id)}
               />
             ))}
           </div>

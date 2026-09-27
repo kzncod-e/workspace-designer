@@ -7,6 +7,7 @@ import { ProductSelector } from "@/components/products/product-selector";
 import { WorkspaceSummary } from "./workspace-summary";
 import { CheckoutSummary } from "@/components/checkout/checkout-summary";
 import { ConfirmationDialog } from "@/components/checkout/confirmation-dialog";
+import { LifestyleExtras } from "./lifestyle-extras";
 import { ConfirmedOrder } from "@/types/workspace";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -22,7 +23,10 @@ import {
   CheckCircle2,
 } from "lucide-react";
 
+import { useWorkspaceUrlSync } from "@/lib/useWorkspaceUrlSync";
+
 export function WorkspaceBuilder() {
+  useWorkspaceUrlSync();
   const { desk, chair, accessories, rentalDuration } = useWorkspaceStore();
 
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
@@ -121,22 +125,26 @@ export function WorkspaceBuilder() {
           </div>
         </div>
 
-        {/* 3. DUAL-COLUMN LAYOUT: CONFIGURATOR (LEFT) & STICKY LIVE PREVIEW (RIGHT) */}
+        {/* 3. HERO PREVIEW (FULL WIDTH) */}
+        <div className="w-full mb-8">
+          <WorkspacePreview />
+        </div>
+
+        {/* 4. CONFIGURATOR & SUMMARY ROW */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {/* LEFT COLUMN: Product Catalog, Categorized Tabs & Controls (7 Cols on desktop) */}
-          <div className="lg:col-span-7 order-2 lg:order-1 space-y-6">
+          {/* LEFT COLUMN: Product Catalog (8 Cols on desktop) */}
+          <div className="lg:col-span-8 space-y-6">
             <ProductSelector />
           </div>
 
-          {/* RIGHT COLUMN: Sticky Live Preview & Pricing Summary (5 Cols on desktop) */}
-          <div className="lg:col-span-5 order-1 lg:order-2 space-y-5 lg:sticky lg:top-24">
-            {/* Visual Centerpiece: Interactive Layered Preview */}
-            <WorkspacePreview />
-
-            {/* Pricing Summary Card */}
+          {/* RIGHT COLUMN: Pricing Summary (4 Cols on desktop) */}
+          <div className="lg:col-span-4 space-y-6 lg:sticky lg:top-24">
             <WorkspaceSummary onOpenCheckout={() => setIsCheckoutOpen(true)} />
           </div>
         </div>
+        
+        {/* LIFESTYLE EXTRAS (from sketch) */}
+        <LifestyleExtras />
       </main>
 
       {/* 4. MOBILE FLOATING ACTION BAR (STICKY BOTTOM) */}
